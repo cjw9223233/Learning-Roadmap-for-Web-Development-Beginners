@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "rows": [
+    {"id": "demo-1", "equipment": "A01", "result": "正常"},
+    {"id": "demo-2", "equipment": "   ", "result": "正常"}
+  ]
+}

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>巡檢元件實驗室｜第 3 階段 A</title><link rel="stylesheet" href="style.css"></head>
+<body><a class="skip" href="#workspace">跳到操作區</a><main>
+<header><p class="eyebrow">VUE / COMPONENTS / STATE</p><h1>資料由主畫面管理，<br>操作從元件送回。</h1><p>用同一份巡檢資料，觀察新增表單、巡檢列與兩個統計元件如何協作。</p><p id="setup" role="status">尚未載入模組。在此範例副本執行 npm run serve，從印出的本機 HTTP 網址操作；免建置，無須安裝套件。</p></header>
+<div id="app" v-cloak>
+  <section class="card" id="workspace"><h2>1. 表單擁有自己的草稿</h2><inspection-form @add-record="add"></inspection-form>
+    <p id="message" role="status" aria-live="polite">{{ message }}</p></section>
+  <section class="card"><h2>2. 同一個統計元件，兩份不同 Props</h2>
+    <div class="summary-grid"><summary-panel title="全部資料" :counts="allCounts"></summary-panel><summary-panel title="目前顯示" :counts="visibleCounts"></summary-panel></div>
+  </section>
+  <section class="card"><h2>3. 狀態改變，畫面跟著更新</h2>
+    <div class="toolbar"><div><label for="filter">顯示條件</label><select id="filter" v-model="filter"><option>全部</option><option>正常</option><option>異常</option></select></div>
+    <button type="button" class="secondary" id="reverse" @click="reversed = !reversed">反轉顯示順序</button></div>
+    <p class="muted">篩選不刪除原資料；反轉順序時，編輯草稿仍跟著相同識別碼。被篩掉的列會卸載，其未儲存草稿也會消失。</p>
+    <ul id="records"><inspection-row v-for="row in visible" :key="row.id" :row="row" @rename-record="rename" @change-result="toggle" @remove-record="remove"></inspection-row></ul>
+    <p id="empty" v-if="visible.length === 0">目前條件沒有資料；可切換條件或新增一筆。</p>
+  </section>
+  <aside class="flow-box"><h2>最近一次資料流</h2><p id="flow" aria-live="polite">{{ flow }}</p></aside>
+</div>
+<section class="card"><h2>讀原始碼，再動手修改</h2><p>app.js 管理主清單與衍生值，components.js 宣告三種元件，model.js 保留資料規則。編輯與新增草稿由各子元件管理。</p><p>此課採免建置的 JavaScript 與固定 Vue 3.5.22 開發版，從 vendor 載入；不宣稱是最新版本。SFC、TypeScript 整合、Router 與打包工具在後續課程。</p><p>完整八步教材位於專案的 lessons/03a-vue-components.html。</p></section>
+<footer>2026-11-25 · 虛構資料 · 服務僅綁定 127.0.0.1 · 重新整理還原三筆資料</footer>
+</main><script src="vendor/vue.global.js"></script><script type="module" src="app.js"></script></body></html>

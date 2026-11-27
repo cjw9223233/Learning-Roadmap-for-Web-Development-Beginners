@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "rows": [
+    {"id": "demo-1", "equipment": "A01 月台照明", "result": "正常"},
+    {"id": "demo-2", "equipment": "A02 指示燈", "result": "異常"},
+    {"id": "demo-3", "equipment": "B01 廣播設備", "result": "正常"}
+  ]
+}

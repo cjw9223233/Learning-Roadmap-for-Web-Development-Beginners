@@ -1,0 +1,13 @@
+TypeScript 6.0.3
+Copyright (c) Microsoft Corporation. All rights reserved.
+Apache License 2.0; see LICENSE.txt.
+Standard declarations retain their original attribution headers.
+
+Unmodified compiler API typescript.js and lib*.d.ts copied from the TypeScript package
+bundled with the locally installed Microsoft VS Code (package version 6.0.3).
+No VS Code application code is included. Package metadata replaced; official CLI,
+server, API typings, and translations omitted. Offline educational subset, not a
+complete official TypeScript distribution. SHA256.json documents local file integrity,
+not independent upstream authenticity.
+Upstream: https://github.com/microsoft/TypeScript/tree/v6.0.3
+Prepared: 2026-11-24. Compiler JavaScript and declarations are unchanged.

@@ -1,0 +1,13 @@
+{
+  "name": "web-learning-modules-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Dependency-free teaching example for shared browser and Node.js modules",
+  "scripts": {
+    "demo": "node cli.js",
+    "test": "node --test",
+    "serve": "node serve.js"
+  },
+  "engines": {"node": ">=20"}
+}

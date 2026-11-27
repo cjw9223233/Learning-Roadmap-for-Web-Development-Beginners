@@ -1,0 +1,23 @@
+{
+  "name": "web-learning-typescript-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node tools/compiler.cjs --project tsconfig.json --noEmit",
+    "build": "node tools/compiler.cjs --project tsconfig.json",
+    "check:errors": "node tools/compiler.cjs --project tsconfig.errors.json",
+    "demo": "node cli.js",
+    "demo:assertion": "node assertion-cli.js",
+    "test": "npm run build && node --test inspection.test.js",
+    "test:runtime": "node --test inspection.test.js",
+    "serve": "node serve.js",
+    "compiler:version": "node tools/compiler.cjs --version"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "file:vendor/typescript"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "typescript",
+  "version": "6.0.3",
+  "private": true,
+  "main": "./lib/typescript.js",
+  "license": "Apache-2.0",
+  "author": "Microsoft Corp.",
+  "homepage": "https://www.typescriptlang.org/",
+  "description": "Unmodified compiler API and standard declarations, repackaged for this offline lesson; official CLI omitted."
+}

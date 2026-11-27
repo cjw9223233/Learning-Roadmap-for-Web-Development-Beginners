@@ -1,0 +1,13 @@
+{
+  "name": "web-learning-vue-components",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test model.test.js",
+    "serve": "node serve.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

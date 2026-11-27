@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>巡檢表單｜02 加入 CSS</title>
+  <link rel="stylesheet" href="form.css">
+</head>
+<body>
+  <main>
+    <a href="../../lessons/01-form-dom.html">← 回到第 1 階段逐步練習</a>
+    <p class="eyebrow">HTML → CSS → JAVASCRIPT</p>
+    <h1>車站設備巡檢</h1>
+    <p class="version-note">02 加入 CSS：比較版面與間距，這一版尚未接上新增與篩選邏輯。</p>
+    <nav aria-label="對照範例版本">
+      <a href="01-static.html">01 靜態 HTML</a>
+      <a href="02-styled.html">02 加入 CSS</a>
+      <a href="03-interactive.html">03 JavaScript 互動</a>
+      <a href="04-notes.html">04 備註練習解答</a>
+    </nav>
+    <section class="card" aria-labelledby="form-title">
+      <h2 id="form-title">新增一筆巡檢</h2>
+      <form id="inspection-form">
+        <label for="equipment">設備名稱（1–80 字元）</label>
+        <input id="equipment" name="equipment" required maxlength="80"
+               placeholder="例如：A01 月台照明">
+        <label for="result">巡檢結果</label>
+        <select id="result" name="result">
+          <option value="正常">正常</option>
+          <option value="異常">異常</option>
+        </select>
+        <button type="button">新增紀錄</button>
+      </form>
+      <p id="message" role="status" aria-live="polite"></p>
+    </section>
+    <section class="card" aria-labelledby="list-title">
+      <h2 id="list-title">巡檢紀錄</h2>
+      <label for="filter">篩選結果</label>
+      <select id="filter" disabled>
+        <option value="all">全部紀錄</option>
+        <option value="異常">只看異常</option>
+        <option value="正常">只看正常</option>
+      </select>
+      <p id="count" aria-live="polite">顯示 0 / 共 0 筆紀錄</p>
+      <ul id="records"><li>尚無紀錄，先新增一筆。</li></ul>
+    </section>
+    <footer>此版只供觀察欄位與排版。新增按鈕尚未接程式；在欄位按 Enter 可能觸發瀏覽器預設送出並重新載入。請只使用虛構資料。</footer>
+  </main>
+</body>
+</html>

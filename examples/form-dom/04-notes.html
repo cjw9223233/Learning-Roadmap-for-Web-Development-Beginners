@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>巡檢表單｜04 備註練習解答</title>
+  <link rel="stylesheet" href="form.css">
+</head>
+<body>
+  <main>
+    <a href="../../lessons/01-form-dom.html">← 回到第 1 階段逐步練習</a>
+    <p class="eyebrow">HTML → CSS → JAVASCRIPT</p>
+    <h1>車站設備巡檢</h1>
+    <p class="version-note">04 備註練習解答：同時連接欄位、資料與呈現，仍只保存於當頁記憶體。</p>
+    <nav aria-label="對照範例版本">
+      <a href="01-static.html">01 靜態 HTML</a>
+      <a href="02-styled.html">02 加入 CSS</a>
+      <a href="03-interactive.html">03 JavaScript 互動</a>
+      <a href="04-notes.html">04 備註練習解答</a>
+    </nav>
+    <section class="card" aria-labelledby="form-title">
+      <h2 id="form-title">新增一筆巡檢</h2>
+      <form id="inspection-form">
+        <label for="equipment">設備名稱（1–80 字元）</label>
+        <input id="equipment" name="equipment" required maxlength="80"
+               placeholder="例如：A01 月台照明">
+        <label for="result">巡檢結果</label>
+        <select id="result" name="result">
+          <option value="正常">正常</option>
+          <option value="異常">異常</option>
+        </select>
+        <label for="note">備註（可留白，最多 120 字元）</label>
+        <textarea id="note" name="note" maxlength="120" rows="3"></textarea>
+        <button type="submit">新增紀錄</button>
+      </form>
+      <p id="message" role="status" aria-live="polite"></p>
+    </section>
+    <section class="card" aria-labelledby="list-title">
+      <h2 id="list-title">巡檢紀錄</h2>
+      <label for="filter">篩選結果</label>
+      <select id="filter">
+        <option value="all">全部紀錄</option>
+        <option value="異常">只看異常</option>
+        <option value="正常">只看正常</option>
+      </select>
+      <p id="count" aria-live="polite">顯示 0 / 共 0 筆紀錄</p>
+      <ul id="records"><li>尚無紀錄，先新增一筆。</li></ul>
+    </section>
+    <footer>使用虛構設備練習。此頁沒有後端、登入或本機永久保存；不會傳送表單資料。</footer>
+  </main>
+  <script src="form-notes.js"></script>
+</body>
+</html>

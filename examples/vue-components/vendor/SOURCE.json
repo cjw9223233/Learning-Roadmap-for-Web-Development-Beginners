@@ -1,0 +1,15 @@
+{
+  "name": "vue",
+  "version": "3.5.22",
+  "build": "development global build with template compiler",
+  "retrieved": "2026-11-25",
+  "sources": {
+    "vue.global.js": "https://unpkg.com/vue@3.5.22/dist/vue.global.js",
+    "LICENSE.txt": "https://unpkg.com/vue@3.5.22/LICENSE"
+  },
+  "sha256": {
+    "vue.global.js": "29afbb3f4ec3f07fcd0d88222bb058acb9ec6253d8ccf9412f8e606d4a581216",
+    "LICENSE.txt": "1bb85cc9b13b81ef41c81c51866172fc345e0503c86726a6755b796590b70175"
+  },
+  "note": "Downloaded with TLS validation enabled; unmodified files. Hashes record local integrity, not independent publisher verification."
+}

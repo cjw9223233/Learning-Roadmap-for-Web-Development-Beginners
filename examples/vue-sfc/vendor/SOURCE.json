@@ -1,0 +1,9 @@
+{
+  "name": "@rollup/wasm-node",
+  "version": "4.68.8",
+  "url": "https://registry.npmjs.org/@rollup/wasm-node/-/wasm-node-4.68.8.tgz",
+  "retrieved": "2026-11-26",
+  "integrity": "sha512-39BR4/biVVB+lCsv0VAMkQUA3sc285ZhE5Eypd7Xu5f1VYMmlpPqbBNOI4XUtQATc4C6E3fXaVeE8l7DCe1TLA==",
+  "sha256": "627cc0c0b7ff05637065e3e8278c4f9ee79aa39fa338980fafd4580d20923381",
+  "note": "Unmodified official package, downloaded with TLS validation; integrity matched public registry metadata. Used by npm overrides as a local tarball. LICENSE is included inside package."
+}

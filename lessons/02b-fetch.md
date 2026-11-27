@@ -1,0 +1,167 @@
+# 第 2 階段 B｜Fetch、非同步與載入失敗
+
+更新：2026-11-23
+
+從本機測試 API 取得資料，逐關確認 HTTP、本文、JSON 與資料契約。這次使用真實 Fetch，不是離線請求模型；失敗、取消與逾時都不應誤清空原清單。npm 與 TypeScript 仍留待後續練習。
+
+## 準備
+
+- 先完成第 2 階段 A，能辨認 version／rows 格式與整份驗證後再套用。
+- 需已安裝 Python。在專案根目錄執行 python examples/fetch-lab/server.py，再開啟它印出的網址；預設為 http://127.0.0.1:8765/。結束後按 Ctrl+C。
+- 若連接埠已被使用，改執行 python examples/fetch-lab/server.py --port 8766。此課使用專用伺服器，一般靜態 http.server 不提供相同 API 情境。
+- 閱讀教材可離線；實際 Fetch 要從本機 HTTP 網址操作。測試伺服器僅綁定 127.0.0.1，使用虛構唯讀資料，沒有資料庫或正式部署。
+
+[開啟 Fetch 練習頁](../examples/fetch-lab/index.html)
+
+程式片段需配合完整 app.js 的上下文閱讀，不是每段都能獨立執行。
+
+## 1. 找到真實的 GET 請求
+
+啟動專用伺服器並開啟練習頁。按 F12 開啟 Network，選 200 三筆有效資料，按開始載入；找到 /api/inspections?case=success。查看 URL、GET、狀態碼與 Response。
+
+**預期觀察：** 清單顯示三筆，Network 也能看見真實 HTTP 回應。這與第 0 階段只畫出文字的模擬器不同。回應是本機測試 API 的固定資料，不是資料庫查詢。
+
+```powershell
+python examples/fetch-lab/server.py
+# 如需改連接埠
+python examples/fetch-lab/server.py --port 8766
+# 在執行中的終端機按 Ctrl+C 結束，不要同時執行兩個相同連接埠的服務。
+```
+
+## 2. 理解 await 等的是哪一步
+
+選延遲 2.5 秒才回應，等待上限改為 5 秒。送出後觀察載入中狀態與仍可操作的選單。閱讀程式中的兩個 await：fetch 與 response.text。
+
+**預期觀察：** async 函式會傳回 Promise；await 暫停該函式後續執行，不是讓整個頁面不能操作。Fetch 取得回應標頭後，本文仍可能尚未讀完；接著還要解析與驗證。
+
+```javascript
+const response = await fetch(url, { signal: controller.signal });
+const text = await response.text();
+// 之後仍需解析、驗證，並確認本次請求仍為最新。
+```
+
+## 3. HTTP 錯誤與連線失敗不同
+
+先成功載入三筆，再分別選 404、500 與連線中斷。每次比較狀態訊息、HTTP 欄位與原清單。不要把所有失敗都只顯示為『沒有資料』。
+
+**預期觀察：** 404／500 仍有 HTTP 回應，需要檢查 response.ok；Fetch 通常不會只因這些狀態自動拒絕。連線中斷情境未取得 HTTP 回應，不應自行標成 500。實際網路、跨來源或本文讀取失敗可能共用較籠統的錯誤，需要結合 Network 調查。
+
+```javascript
+if (!response.ok) {
+  throw new LoadError('http', `HTTP ${response.status}`);
+}
+```
+
+## 4. 200 之後仍可能失敗
+
+依序選 JSON 語法錯誤、資料欄位不合規，再選有效空清單。觀察哪些情況保留原清單，哪個情況將清單更新為零筆。
+
+**預期觀察：** 200 只表示 HTTP 這一關成功；JSON 語法與資料契約是後面的檢查。有效空陣列是成功結果，應更新成零筆；解析或驗證失敗則保留原清單。version、ID 及欄位規則是本課契約，不是所有 API 都使用相同格式。
+
+```javascript
+function parsePayload(text) {
+  if (new Blob([text]).size > 128 * 1024) throw new LoadError('data', '本文超過本課 128 KiB 上限');
+  let data;
+  try { data = JSON.parse(text); }
+  catch { throw new LoadError('json', 'JSON 語法錯誤'); }
+  if (!data || data.version !== 1 || !Array.isArray(data.rows) || data.rows.length > 200) {
+    throw new LoadError('data', '需要 version: 1 與最多 200 筆的 rows 陣列');
+  }
+  const ids = new Set();
+  return data.rows.map((row, index) => {
+    if (!row || typeof row.id !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(row.id) || ids.has(row.id) || typeof row.equipment !== 'string' || !row.equipment.trim() || row.equipment.trim().length > 80 || !['正常', '異常'].includes(row.result)) {
+      throw new LoadError('data', `第 ${index + 1} 筆資料不符合契約`);
+    }
+    ids.add(row.id);
+    return { id: row.id, equipment: row.equipment.trim(), result: row.result };
+  });
+}
+```
+
+## 5. 用計時器中止等待
+
+先成功載入三筆，再選延遲 2.5 秒才回應，將等待上限設為 1 秒。觀察約 1 秒後的結果；再改為 5 秒重試。
+
+**預期觀察：** 1 秒情境由本頁計時後呼叫 abort，不是伺服器回覆 HTTP 408。5 秒足以等到固定延遲的成功回應。setTimeout 是排程門檻，忙碌或背景頁面可能較晚執行；本課不把它當作嚴格即時期限。
+
+```javascript
+job.timer = setTimeout(() => {
+  if (active === job && !job.controller.signal.aborted) {
+    job.reason = 'timeout';
+    job.controller.abort();
+  }
+}, timeout);
+// 計時器保留至本文與驗證完成，在 finally 清除。
+```
+
+## 6. 收到 200 後也能取消
+
+選先回 200、再延遲 2.5 秒傳本文。用 1 秒上限觀察逾時；再改成 5 秒，送出後看到 HTTP 200 就按取消。
+
+**預期觀察：** HTTP 欄位可已顯示 200，但資料尚未驗證與套用。AbortController 也能中止本文讀取。取消用戶端等待不保證伺服器工作停止，更不能當成撤回正式寫入操作的方法。
+
+```javascript
+if (active && !active.controller.signal.aborted) {
+  active.reason = 'user';
+  active.controller.abort();
+}
+```
+
+## 7. 讓最新請求決定畫面
+
+選慢回應、5 秒上限並送出，立刻改選有效空清單再送出。等待超過 2.5 秒，確認最後仍是空清單。再閱讀 active 與 job 的比較。
+
+**預期觀察：** 前次請求會被中止，舊請求的成功、錯誤或 finally 都不能改動新請求的畫面與控制項。單有一個 loading 布林值不足以表示『這是不是最新那次載入』。
+
+```javascript
+const response = await fetch(url, options);
+if (active !== job) return;
+const text = await response.text();
+if (active !== job) return;
+// catch 與 finally 也必須檢查是否仍是本次 job。
+```
+
+## 8. 把成功資料交給保存練習
+
+成功載入三筆後匯出 fetch-lab-backup.json，再到第 2 階段 A 讀取檔案、驗證、確認套用，最後自行決定是否保存。
+
+**預期觀察：** 兩課都使用 version: 1 與 rows 契約，所以成功資料可以接續前一課的匯入流程。本頁沒有自動寫入 localStorage，重新整理仍會清空當頁記憶體。完成本課不代表 npm 與 TypeScript 已完成。
+
+## 自己動手驗證
+
+### A. 畫出四關與不同失敗
+
+用 GET → HTTP → 本文 → JSON → 資料契約畫出流程，把 404、本文延遲、壞 JSON 與錯誤欄位放到對應位置。
+
+**參考解答：** 404 在 HTTP 檢查停止；本文延遲可能在已收到 200 後等待；壞 JSON 在解析停止；不合規欄位在契約驗證停止。只有整份驗證通過才更新清單。
+
+### B. 比較取消、逾時與 500
+
+先填寫三種情況是否有 HTTP 回應、誰決定停止、原清單是否保留，再實際操作驗證。
+
+**參考解答：** 500 是伺服器回應；取消由使用者呼叫用戶端中止，逾時由本頁計時器呼叫中止。取消／逾時可能發生在取得標頭前或之後，因此不一定沒有 HTTP 狀態；三者在本課都保留原清單。
+
+### C. 如果刪掉最新請求檢查？
+
+在自己的副本閱讀 active !== job 的位置。先解釋每個位置保護什麼，再思考：若舊請求沒被取消成功，會不會蓋掉新結果？
+
+**參考解答：** 每個 await 之後需要確認請求身分，才能避免舊回應繼續更新；catch 不應用舊錯誤改掉新狀態，finally 也不應停用新請求的取消按鈕。取消與身分檢查互補；不需為了練習把真實服務的保護刪掉。
+
+## 完成檢核
+
+- [ ] 可從 Network 找到本機 API 的真實 GET 與回應。
+- [ ] 能分辨 HTTP 錯誤、JSON 語法錯誤、資料不合規與有效空清單。
+- [ ] 失敗、取消與逾時不會清空前次成功資料。
+- [ ] 能重現先收到 200 再逾時或取消本文讀取。
+- [ ] 新請求完成後，舊請求不會覆蓋最新結果。
+- [ ] 成功資料可匯出並在第 2 階段 A 驗證匯入；理解此頁不自動保存。
+
+本課不自動勾選主教材進度。npm 與 TypeScript 尚待後續逐步練習。
+
+## 來源與範圍
+
+核對日期：2026-11-23。教學情境、資料契約與狀態處理是本教材設計。
+
+- [MDN：Using the Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch)：核對 Fetch、HTTP 狀態檢查、非同步本文讀取及取消流程。
+- [MDN：AbortController.abort](https://developer.mozilla.org/en-US/docs/Web/API/AbortController/abort)：核對中止 Fetch 與回應本文的能力。
+- [Python：http.server](https://docs.python.org/3/library/http.server.html)：核對 BaseHTTPRequestHandler 與 ThreadingHTTPServer。本課只使用本機教學服務。

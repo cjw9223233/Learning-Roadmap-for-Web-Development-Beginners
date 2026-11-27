@@ -1,0 +1,35 @@
+{
+  "title": "第 2 階段 D｜TypeScript、編譯與執行期驗證",
+  "date": "2026-11-24",
+  "intro": "為共用巡檢模組加上資料型別，親手比較編譯前的錯誤與執行時的錯誤。延續第 2C 的 JSON 契約：型別描述程式內部的預期，外部資料仍須逐欄驗證。",
+  "materials": [
+    "先完成第 2C，能使用 import、export、npm scripts，並讀懂 parseInspections 的驗證規則。本課練習不需要登入、資料庫或 API 金鑰。",
+    "把 examples/typescript-lab 整個資料夾（包含 vendor、tools、src、dist 與鎖定檔）複製到自己的練習位置，在副本開啟終端機。不要直接修改教材原版。",
+    "需 Node.js 20 以上與 npm；本次實測 Node.js 24.12.0、npm 11.6.2、TypeScript 6.0.3，沒有逐版測試所有 Node.js 版本。PowerShell 若擋住 npm.ps1，可改用 npm.cmd，無須調整全域執行政策。",
+    "本課固定使用隨附的 TypeScript 6.0.3 編譯器 API 與標準宣告檔。vendor/typescript 是從本機 VS Code 隨附套件複製的離線子集，含授權、來源與檔案雜湊；不是完整官方 CLI 套件。tools/compiler.cjs 是教材的小型驅動程式，真正呼叫 createProgram、型別診斷與 emit。無須安裝全域 tsc。",
+    "在副本先執行 npm ci --ignore-scripts --offline --audit=false --fund=false；它只連結隨附的 file:vendor/typescript，不連外下載。保留完整副本與鎖定檔；不要執行 npm install typescript@latest 來取代本課固定環境。"
+  ],
+  "steps": [
+    {"title": "1. 先檢查，再執行", "text": "依序執行版本、check、build、demo。check 加上 noEmit，只檢查 src 內的正常 TypeScript 檔；build 檢查後產生 dist。cli.js 與測試是普通 JavaScript，本課未啟用 checkJs，不能宣稱每個檔案都經過型別檢查。", "expected": "編譯器版本為 6.0.3；check 不改 dist；build 成功後 demo 顯示 total: 3、normal: 2、abnormal: 1。Node.js 能直接移除部分 TypeScript 語法，不代表做過型別檢查。本課明確呼叫真正的編譯器。", "code": "commands"},
+    {"title": "2. 用型別描述一筆巡檢資料", "text": "閱讀 src/inspection.ts。string、number 表示值的種類；interface 描述物件欄位；InspectionResult 是只允許正常或異常的字串聯集。Backup 的 version: 1 是數字字面值型別，不是任意 number。先用自己的話解釋每一個欄位，再嘗試增加一筆合法資料到 src/examples.ts。", "expected": "少了 equipment、寫錯欄位名或把 result 寫成未知，編譯器能指出程式碼中的不一致。型別不是資料庫欄位，也不會自動產生輸入表單或把數字轉成字串。", "code": "types"},
+    {"title": "3. 親手讓型別檢查失敗", "text": "執行 npm run check:errors，閱讀 src/type-errors.ts 的四個錯誤。此命令預期非零退出；它使用獨立 tsconfig.errors.json，因此不阻擋原版 build。將錯誤檔的內容逐一改正再重跑；不要藉由 any、as 或關閉 strict 讓紅字消失。", "expected": "原版出現四個診斷：未知結果、數字設備名稱、字串統計總數、equpment 拼字錯誤。全部修正後，check:errors 才成功。這份設定 noEmit: true，練習檔不應產生任何 JavaScript。", "code": "errors"},
+    {"title": "4. 從 unknown 縮小到可以使用的資料", "text": "JSON.parse 的結果先存成 unknown。unknown 要求我們先證明值符合條件，才能讀取欄位。依序追蹤 isRecord、版本與陣列檢查、每筆欄位檢查；typeof、null 與陣列判斷都是執行期 JavaScript。完整通過後才回傳重新建立的 Inspection[]。", "expected": "isRecord 的 value is Record<string, unknown> 是型別守衛，背後仍需正確的判斷式。不要把守衛當魔法：錯誤的判斷式一樣會誤導編譯器。外部資料與未經型別檢查的 JS 呼叫，都需要這些實際檢查。", "code": "boundary"},
+    {"title": "5. 看見 as 斷言沒有驗證資料", "text": "執行 npm run demo:assertion，再在網頁按「比較斷言與執行期驗證」。固定輸入把 equipment 設為 42、result 設為未知。as Backup 只是告訴編譯器採用這個型別；它沒有呼叫驗證器，也不會轉換資料。此示範刻意保留斷言，讓你比較兩層結果。", "expected": "這段程式可以通過 check，但 observedType 是 number，accepted 是 false。執行期驗證器拒絕整份資料。斷言示範不會覆寫目前有效清單。不要把 JSON.parse(text) as Backup 當成匯入驗證。", "code": "assertion"},
+    {"title": "6. 比較 TypeScript 與真正產生的 JavaScript", "text": "成功 build 後，比較 src/inspection.ts 與 dist/inspection.js，搜尋 interface、InspectionResult 與 if。執行 npm run serve，開啟印出的 127.0.0.1 網址，再從 Network 找 dist/app.js、inspection.js、examples.js、assertion-demo.js。原始碼的相對匯入寫 .js，對應編譯後執行的檔名。", "expected": "介面、型別註記與斷言消失；if、throw、JSON.parse 保留。瀏覽器載入 dist 的 JavaScript，沒有在頁面內執行編譯器。直接雙擊 HTML 可讀說明，但模組互動需 HTTP。修改 src 後要重新 build 並重新整理。", "code": "config"},
+    {"title": "7. 建置失敗時，留意舊輸出", "text": "只在自己的副本操作：先成功 build，記下畫面與 dist/examples.js。再把 src/examples.ts 的一個正常改成未知，執行 npm run build，預期失敗。觀察 dist 與瀏覽器仍可能保留舊結果。修正來源，再確認 build 成功與頁面更新。", "expected": "本課 noEmitOnError: true 阻止這次錯誤建置產生新輸出，並不刪除以前成功的 dist。舊畫面正常不能證明新程式已通過。正式流程應先檢查建置的退出結果，再決定是否測試或部署；此課沒有自動部署。"},
+    {"title": "8. 用測試與瀏覽器驗證另一層責任", "text": "執行 npm test，它先 build，成功才測試 dist。12 個測試涵蓋契約、邊界、統計、斷言以及普通 JS 呼叫傳入錯誤型別。再到網頁把第二筆設備名稱改成數字，確認舊清單保留；嘗試空清單與正常資料。畫面只使用 textContent，沒有將輸入當 HTML 插入。", "expected": "原版 12 個測試通過；數字名稱在執行時遭拒，即使輸入只是瀏覽器裡的 JSON 文字。check 通過不能取代資料驗證或測試，測試通過也不代表安全與所有情境皆已證明。此範例不讀寫 localStorage。", "code": "tests"}
+  ],
+  "exercises": [
+    {"title": "練習一：修好四個型別錯誤", "task": "在副本逐一修正 src/type-errors.ts；每修一個執行 check:errors，記錄錯誤數是否減少。", "answer": "wrongResult.result 改成正常或異常；wrongName.equipment 改成字串；wrongSummary.total 改成數字；equpment 改成 equipment。最後命令成功且不產生練習檔輸出。不要使用型別斷言掩蓋錯誤。"},
+    {"title": "練習二：讓原始資料改變畫面", "task": "把 src/examples.ts 第一筆的 result 改成異常，重新 build、demo 並重新整理 HTTP 頁面，再還原。", "answer": "第一筆原本正常，修改後總數仍為 3、正常 1、異常 2。只改 src 卻沒有 build，cli 與頁面仍讀到舊 dist。還原來源後再 build，應恢復 3／2／1。"},
+    {"title": "練習三：寫下兩層拒絕的證據", "task": "比較 type-errors.ts 的 equipment: 42，與網頁 JSON 的 equipment: 42。記錄各自在何時被誰拒絕，以及 as Backup 為何沒有提供保護。", "answer": "前者是有型別約束的來源程式，在 check 時被編譯器拒絕；後者是執行時讀到的文字，由 parseInspections 的 typeof 檢查拒絕。as 只影響編譯器的認知，輸出中不存在這個驗證動作。"}
+  ],
+  "checks": ["能說明 interface、聯集與字面值型別，並修正四個刻意錯誤。", "能執行離線 ci、check、build、demo 與 12 個測試，分辨預期失敗與意外失敗。", "能指出 unknown 的縮小過程，以及真正保護外部 JSON 的執行期條件。", "能用斷言示範證明 as 不做資料轉換或驗證。", "能說明瀏覽器讀 dist，以及錯誤建置可能留下舊輸出的原因。"],
+  "sources": [
+    {"title": "TypeScript：Everyday Types", "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html", "note": "核對物件、聯集、字面值與型別斷言的用途。"},
+    {"title": "TypeScript：Narrowing", "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html", "note": "核對 typeof、控制流程與型別守衛。"},
+    {"title": "TypeScript：noEmitOnError", "url": "https://www.typescriptlang.org/tsconfig/noEmitOnError.html", "note": "核對錯誤時阻止輸出；本課明確啟用此選項。"},
+    {"title": "TypeScript：Compiler API", "url": "https://github.com/microsoft/TypeScript/wiki/Using-the-Compiler-API", "note": "核對本課 6.0 編譯器的 Program、診斷與 emit 流程；此 API 範例適用 6.0 與更早版本，不外推到新版編譯器。"},
+    {"title": "Node.js：Modules — TypeScript", "url": "https://nodejs.org/api/typescript.html", "note": "核對內建型別移除不執行型別檢查，避免把執行成功當成 check 通過。"}
+  ]
+}

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>巡檢練習｜Web 學習手冊</title><link rel="stylesheet" href="../assets/style.css"><style>main{margin:0 auto;max-width:900px}form{display:grid;gap:12px}form label{font-weight:600}input,select{padding:12px;border:1px solid #a8b9ad;border-radius:6px;width:100%}ul#records{padding:0;list-style:none}#records li{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:16px;background:white;border:1px solid var(--line);border-radius:8px}#records span{overflow-wrap:anywhere}.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:30px}.toolbar select{width:auto}.badge{font-size:13px;color:var(--warm)}#message{min-height:1.8em;color:var(--warm)}</style></head>
+<body><main><a href="../index.html#stage-1">← 回到第 1 階段</a><p class="eyebrow">PRACTICE / 01–02</p><h1>車站設備巡檢</h1><p>使用虛構資料練習表單、DOM、篩選與本機保存。這個範例沒有後端、登入或多人共用；資料只留在目前瀏覽器。</p>
+<section class="dashboard"><h2>新增紀錄</h2><form id="inspection-form"><label for="equipment">設備名稱（1–80 字元）</label><input id="equipment" name="equipment" maxlength="80" required placeholder="例如：A01 月台照明"><label for="result">巡檢結果</label><select id="result" name="result"><option>正常</option><option>異常</option></select><button type="submit">新增紀錄</button></form><p id="message" role="status" aria-live="polite"></p></section>
+<div class="toolbar"><label for="filter">顯示</label><select id="filter"><option value="all">全部紀錄</option><option value="異常">只看異常</option><option value="正常">只看正常</option></select><button id="export" type="button">匯出 JSON 備份</button></div><p id="count" aria-live="polite"></p><ul id="records"></ul><p class="muted">重新整理後會嘗試還原資料；瀏覽器可能限制 file: 頁面的儲存，請使用匯出備份。刪除操作會先確認。這是教學範例，請勿輸入真實營運或個人資料。</p></main>
+<script>
+'use strict';
+const form = document.getElementById('inspection-form');
+const equipmentInput = document.getElementById('equipment');
+const resultInput = document.getElementById('result');
+const list = document.getElementById('records');
+const filter = document.getElementById('filter');
+const message = document.getElementById('message');
+const storageKey = 'web-inspection-example-v1';
+let rows = [];
+let storageReadable = true;
+try {
+  const saved = localStorage.getItem(storageKey);
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed) || !parsed.every(r => r && typeof r.id === 'string' && typeof r.equipment === 'string' && r.equipment.trim().length > 0 && r.equipment.length <= 80 && ['正常','異常'].includes(r.result) && typeof r.createdAt === 'string') || new Set(parsed.map(r=>r.id)).size !== parsed.length) throw new Error('資料格式不符');
+    rows = parsed;
+  }
+} catch {
+  storageReadable = false;
+  message.textContent = '原儲存資料無法讀取。以暫存模式開始，避免覆寫原資料；請匯出新紀錄備份。';
+}
+function persist() {
+  if (!storageReadable) return false;
+  try { localStorage.setItem(storageKey, JSON.stringify(rows)); return true; }
+  catch { return false; }
+}
+function render() {
+  list.replaceChildren();
+  const visible = rows.filter(row => filter.value === 'all' || row.result === filter.value);
+  document.getElementById('count').textContent = `顯示 ${visible.length} / 共 ${rows.length} 筆紀錄`;
+  if (visible.length === 0) { const empty = document.createElement('li'); empty.textContent = '目前沒有符合條件的紀錄。'; list.append(empty); }
+  for (const row of visible) {
+    const item = document.createElement('li');
+    const text = document.createElement('span');
+    text.textContent = `${row.equipment} · ${row.result}`;
+    const remove = document.createElement('button');
+    remove.type = 'button'; remove.className = 'secondary'; remove.textContent = '刪除';
+    remove.setAttribute('aria-label', `刪除 ${row.equipment} 的巡檢紀錄`);
+    remove.addEventListener('click', () => {
+      if (!confirm(`刪除「${row.equipment}」這筆練習紀錄？`)) return;
+      rows = rows.filter(r => r.id !== row.id);
+      const saved = persist(); render(); filter.focus();
+      message.textContent = saved ? '已刪除並保存。' : '已刪除；本次無法保存，請匯出備份。';
+    });
+    item.append(text, remove); list.append(item);
+  }
+}
+form.addEventListener('submit', event => {
+  event.preventDefault();
+  const equipment = equipmentInput.value.trim();
+  if (!equipment || equipment.length > 80) { message.textContent = '設備名稱須為 1–80 字元，不能全是空白。'; equipmentInput.focus(); return; }
+  if (!['正常','異常'].includes(resultInput.value)) { message.textContent = '請選擇有效結果。'; return; }
+  rows.push({ id: crypto.randomUUID(), equipment, result: resultInput.value, createdAt: new Date().toISOString() });
+  const saved = persist();
+  form.reset(); render(); equipmentInput.focus();
+  message.textContent = saved ? '已新增並保存於目前瀏覽器。' : '已新增；本次無法保存，請匯出 JSON 備份。';
+});
+filter.addEventListener('change', render);
+document.getElementById('export').addEventListener('click', () => {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(rows, null, 2)], {type:'application/json'}));
+  const link = document.createElement('a'); link.href = url; link.download = 'inspections.json'; link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+render();
+</script></body></html>
